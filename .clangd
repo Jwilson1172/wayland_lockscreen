@@ -1,2 +1,2 @@
 CompileFlags:
-  Add: [-xc, -std=c23]
+  Add: [-xc, -std=c23, -DMINIMAL_LOCK_DEV]

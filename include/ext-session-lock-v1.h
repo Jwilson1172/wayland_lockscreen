@@ -3,11 +3,11 @@
 #ifndef EXT_SESSION_LOCK_V1_CLIENT_PROTOCOL_H
 #define EXT_SESSION_LOCK_V1_CLIENT_PROTOCOL_H
 
-#include <stdint.h>
-#include <stddef.h>
 #include "wayland-client.h"
+#include <stddef.h>
+#include <stdint.h>
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -40,8 +40,10 @@ extern "C" {
  *
  * @section page_ifaces_ext_session_lock_v1 Interfaces
  * - @subpage page_iface_ext_session_lock_manager_v1 - used to lock the session
- * - @subpage page_iface_ext_session_lock_v1 - manage lock state and create lock surfaces
- * - @subpage page_iface_ext_session_lock_surface_v1 - a surface displayed while the session is locked
+ * - @subpage page_iface_ext_session_lock_v1 - manage lock state and create lock
+ * surfaces
+ * - @subpage page_iface_ext_session_lock_surface_v1 - a surface displayed while
+ * the session is locked
  * @section page_copyright_ext_session_lock_v1 Copyright
  * <pre>
  *
@@ -83,7 +85,8 @@ struct wl_surface;
  * See @ref iface_ext_session_lock_manager_v1.
  */
 /**
- * @defgroup iface_ext_session_lock_manager_v1 The ext_session_lock_manager_v1 interface
+ * @defgroup iface_ext_session_lock_manager_v1 The ext_session_lock_manager_v1
+ * interface
  *
  * This interface is used to request that the session be locked.
  */
@@ -225,7 +228,8 @@ extern const struct wl_interface ext_session_lock_v1_interface;
  * See @ref iface_ext_session_lock_surface_v1.
  */
 /**
- * @defgroup iface_ext_session_lock_surface_v1 The ext_session_lock_surface_v1 interface
+ * @defgroup iface_ext_session_lock_surface_v1 The ext_session_lock_surface_v1
+ * interface
  *
  * The client may use lock surfaces to display a screensaver, render a
  * dialog to enter a password and unlock the session, or however else it
@@ -249,7 +253,6 @@ extern const struct wl_interface ext_session_lock_surface_v1_interface;
 #define EXT_SESSION_LOCK_MANAGER_V1_DESTROY 0
 #define EXT_SESSION_LOCK_MANAGER_V1_LOCK 1
 
-
 /**
  * @ingroup iface_ext_session_lock_manager_v1
  */
@@ -260,23 +263,27 @@ extern const struct wl_interface ext_session_lock_surface_v1_interface;
 #define EXT_SESSION_LOCK_MANAGER_V1_LOCK_SINCE_VERSION 1
 
 /** @ingroup iface_ext_session_lock_manager_v1 */
-static inline void
-ext_session_lock_manager_v1_set_user_data(struct ext_session_lock_manager_v1 *ext_session_lock_manager_v1, void *user_data)
+static inline void ext_session_lock_manager_v1_set_user_data(
+        struct ext_session_lock_manager_v1 *ext_session_lock_manager_v1,
+        void                               *user_data)
 {
-	wl_proxy_set_user_data((struct wl_proxy *) ext_session_lock_manager_v1, user_data);
+        wl_proxy_set_user_data((struct wl_proxy *)ext_session_lock_manager_v1,
+                               user_data);
 }
 
 /** @ingroup iface_ext_session_lock_manager_v1 */
-static inline void *
-ext_session_lock_manager_v1_get_user_data(struct ext_session_lock_manager_v1 *ext_session_lock_manager_v1)
+static inline void *ext_session_lock_manager_v1_get_user_data(
+        struct ext_session_lock_manager_v1 *ext_session_lock_manager_v1)
 {
-	return wl_proxy_get_user_data((struct wl_proxy *) ext_session_lock_manager_v1);
+        return wl_proxy_get_user_data(
+                (struct wl_proxy *)ext_session_lock_manager_v1);
 }
 
-static inline uint32_t
-ext_session_lock_manager_v1_get_version(struct ext_session_lock_manager_v1 *ext_session_lock_manager_v1)
+static inline uint32_t ext_session_lock_manager_v1_get_version(
+        struct ext_session_lock_manager_v1 *ext_session_lock_manager_v1)
 {
-	return wl_proxy_get_version((struct wl_proxy *) ext_session_lock_manager_v1);
+        return wl_proxy_get_version(
+                (struct wl_proxy *)ext_session_lock_manager_v1);
 }
 
 /**
@@ -286,11 +293,15 @@ ext_session_lock_manager_v1_get_version(struct ext_session_lock_manager_v1 *ext_
  * no longer be used. Existing objects created through this interface
  * remain valid.
  */
-static inline void
-ext_session_lock_manager_v1_destroy(struct ext_session_lock_manager_v1 *ext_session_lock_manager_v1)
+static inline void ext_session_lock_manager_v1_destroy(
+        struct ext_session_lock_manager_v1 *ext_session_lock_manager_v1)
 {
-	wl_proxy_marshal_flags((struct wl_proxy *) ext_session_lock_manager_v1,
-			 EXT_SESSION_LOCK_MANAGER_V1_DESTROY, NULL, wl_proxy_get_version((struct wl_proxy *) ext_session_lock_manager_v1), WL_MARSHAL_FLAG_DESTROY);
+        wl_proxy_marshal_flags(
+                (struct wl_proxy *)ext_session_lock_manager_v1,
+                EXT_SESSION_LOCK_MANAGER_V1_DESTROY, NULL,
+                wl_proxy_get_version(
+                        (struct wl_proxy *)ext_session_lock_manager_v1),
+                WL_MARSHAL_FLAG_DESTROY);
 }
 
 /**
@@ -301,40 +312,45 @@ ext_session_lock_manager_v1_destroy(struct ext_session_lock_manager_v1 *ext_sess
  * or ext_session_lock_v1.finished event on the created object in
  * response to this request.
  */
-static inline struct ext_session_lock_v1 *
-ext_session_lock_manager_v1_lock(struct ext_session_lock_manager_v1 *ext_session_lock_manager_v1)
+static inline struct ext_session_lock_v1 *ext_session_lock_manager_v1_lock(
+        struct ext_session_lock_manager_v1 *ext_session_lock_manager_v1)
 {
-	struct wl_proxy *id;
+        struct wl_proxy *id;
 
-	id = wl_proxy_marshal_flags((struct wl_proxy *) ext_session_lock_manager_v1,
-			 EXT_SESSION_LOCK_MANAGER_V1_LOCK, &ext_session_lock_v1_interface, wl_proxy_get_version((struct wl_proxy *) ext_session_lock_manager_v1), 0, NULL);
+        id = wl_proxy_marshal_flags(
+                (struct wl_proxy *)ext_session_lock_manager_v1,
+                EXT_SESSION_LOCK_MANAGER_V1_LOCK,
+                &ext_session_lock_v1_interface,
+                wl_proxy_get_version(
+                        (struct wl_proxy *)ext_session_lock_manager_v1),
+                0, NULL);
 
-	return (struct ext_session_lock_v1 *) id;
+        return (struct ext_session_lock_v1 *)id;
 }
 
 #ifndef EXT_SESSION_LOCK_V1_ERROR_ENUM
 #define EXT_SESSION_LOCK_V1_ERROR_ENUM
 enum ext_session_lock_v1_error {
-	/**
-	 * attempted to destroy session lock while locked
-	 */
-	EXT_SESSION_LOCK_V1_ERROR_INVALID_DESTROY = 0,
-	/**
-	 * unlock requested but locked event was never sent
-	 */
-	EXT_SESSION_LOCK_V1_ERROR_INVALID_UNLOCK = 1,
-	/**
-	 * given wl_surface already has a role
-	 */
-	EXT_SESSION_LOCK_V1_ERROR_ROLE = 2,
-	/**
-	 * given output already has a lock surface
-	 */
-	EXT_SESSION_LOCK_V1_ERROR_DUPLICATE_OUTPUT = 3,
-	/**
-	 * given wl_surface has a buffer attached or committed
-	 */
-	EXT_SESSION_LOCK_V1_ERROR_ALREADY_CONSTRUCTED = 4,
+        /**
+         * attempted to destroy session lock while locked
+         */
+        EXT_SESSION_LOCK_V1_ERROR_INVALID_DESTROY = 0,
+        /**
+         * unlock requested but locked event was never sent
+         */
+        EXT_SESSION_LOCK_V1_ERROR_INVALID_UNLOCK = 1,
+        /**
+         * given wl_surface already has a role
+         */
+        EXT_SESSION_LOCK_V1_ERROR_ROLE = 2,
+        /**
+         * given output already has a lock surface
+         */
+        EXT_SESSION_LOCK_V1_ERROR_DUPLICATE_OUTPUT = 3,
+        /**
+         * given wl_surface has a buffer attached or committed
+         */
+        EXT_SESSION_LOCK_V1_ERROR_ALREADY_CONSTRUCTED = 4,
 };
 #endif /* EXT_SESSION_LOCK_V1_ERROR_ENUM */
 
@@ -343,63 +359,63 @@ enum ext_session_lock_v1_error {
  * @struct ext_session_lock_v1_listener
  */
 struct ext_session_lock_v1_listener {
-	/**
-	 * session successfully locked
-	 *
-	 * This client is now responsible for displaying graphics while
-	 * the session is locked and deciding when to unlock the session.
-	 *
-	 * The locked event must not be sent until a new "locked" frame has
-	 * been presented on all outputs and no security sensitive
-	 * normal/unlocked content is possibly visible.
-	 *
-	 * If this event is sent, making the destroy request is a protocol
-	 * error, the lock object must be destroyed using the
-	 * unlock_and_destroy request.
-	 */
-	void (*locked)(void *data,
-		       struct ext_session_lock_v1 *ext_session_lock_v1);
-	/**
-	 * the session lock object should be destroyed
-	 *
-	 * The compositor has decided that the session lock should be
-	 * destroyed as it will no longer be used by the compositor.
-	 * Exactly when this event is sent is compositor policy, but it
-	 * must never be sent more than once for a given session lock
-	 * object.
-	 *
-	 * This might be sent because there is already another
-	 * ext_session_lock_v1 object held by a client, or the compositor
-	 * has decided to deny the request to lock the session for some
-	 * other reason. This might also be sent because the compositor
-	 * implements some alternative, secure way to authenticate and
-	 * unlock the session.
-	 *
-	 * The finished event should be sent immediately on creation of
-	 * this object if the compositor decides that the locked event will
-	 * not be sent.
-	 *
-	 * If the locked event is sent on creation of this object the
-	 * finished event may still be sent at some later time in this
-	 * object's lifetime. This is compositor policy.
-	 *
-	 * Upon receiving this event, the client should make either the
-	 * destroy request or the unlock_and_destroy request, depending on
-	 * whether or not the locked event was received on this object.
-	 */
-	void (*finished)(void *data,
-			 struct ext_session_lock_v1 *ext_session_lock_v1);
+        /**
+         * session successfully locked
+         *
+         * This client is now responsible for displaying graphics while
+         * the session is locked and deciding when to unlock the session.
+         *
+         * The locked event must not be sent until a new "locked" frame has
+         * been presented on all outputs and no security sensitive
+         * normal/unlocked content is possibly visible.
+         *
+         * If this event is sent, making the destroy request is a protocol
+         * error, the lock object must be destroyed using the
+         * unlock_and_destroy request.
+         */
+        void (*locked)(void                       *data,
+                       struct ext_session_lock_v1 *ext_session_lock_v1);
+        /**
+         * the session lock object should be destroyed
+         *
+         * The compositor has decided that the session lock should be
+         * destroyed as it will no longer be used by the compositor.
+         * Exactly when this event is sent is compositor policy, but it
+         * must never be sent more than once for a given session lock
+         * object.
+         *
+         * This might be sent because there is already another
+         * ext_session_lock_v1 object held by a client, or the compositor
+         * has decided to deny the request to lock the session for some
+         * other reason. This might also be sent because the compositor
+         * implements some alternative, secure way to authenticate and
+         * unlock the session.
+         *
+         * The finished event should be sent immediately on creation of
+         * this object if the compositor decides that the locked event will
+         * not be sent.
+         *
+         * If the locked event is sent on creation of this object the
+         * finished event may still be sent at some later time in this
+         * object's lifetime. This is compositor policy.
+         *
+         * Upon receiving this event, the client should make either the
+         * destroy request or the unlock_and_destroy request, depending on
+         * whether or not the locked event was received on this object.
+         */
+        void (*finished)(void                       *data,
+                         struct ext_session_lock_v1 *ext_session_lock_v1);
 };
 
 /**
  * @ingroup iface_ext_session_lock_v1
  */
-static inline int
-ext_session_lock_v1_add_listener(struct ext_session_lock_v1 *ext_session_lock_v1,
-				 const struct ext_session_lock_v1_listener *listener, void *data)
+static inline int ext_session_lock_v1_add_listener(
+        struct ext_session_lock_v1                *ext_session_lock_v1,
+        const struct ext_session_lock_v1_listener *listener, void *data)
 {
-	return wl_proxy_add_listener((struct wl_proxy *) ext_session_lock_v1,
-				     (void (**)(void)) listener, data);
+        return wl_proxy_add_listener((struct wl_proxy *)ext_session_lock_v1,
+                                     (void (**)(void))listener, data);
 }
 
 #define EXT_SESSION_LOCK_V1_DESTROY 0
@@ -429,23 +445,24 @@ ext_session_lock_v1_add_listener(struct ext_session_lock_v1 *ext_session_lock_v1
 #define EXT_SESSION_LOCK_V1_UNLOCK_AND_DESTROY_SINCE_VERSION 1
 
 /** @ingroup iface_ext_session_lock_v1 */
-static inline void
-ext_session_lock_v1_set_user_data(struct ext_session_lock_v1 *ext_session_lock_v1, void *user_data)
+static inline void ext_session_lock_v1_set_user_data(
+        struct ext_session_lock_v1 *ext_session_lock_v1, void *user_data)
 {
-	wl_proxy_set_user_data((struct wl_proxy *) ext_session_lock_v1, user_data);
+        wl_proxy_set_user_data((struct wl_proxy *)ext_session_lock_v1,
+                               user_data);
 }
 
 /** @ingroup iface_ext_session_lock_v1 */
-static inline void *
-ext_session_lock_v1_get_user_data(struct ext_session_lock_v1 *ext_session_lock_v1)
+static inline void *ext_session_lock_v1_get_user_data(
+        struct ext_session_lock_v1 *ext_session_lock_v1)
 {
-	return wl_proxy_get_user_data((struct wl_proxy *) ext_session_lock_v1);
+        return wl_proxy_get_user_data((struct wl_proxy *)ext_session_lock_v1);
 }
 
 static inline uint32_t
 ext_session_lock_v1_get_version(struct ext_session_lock_v1 *ext_session_lock_v1)
 {
-	return wl_proxy_get_version((struct wl_proxy *) ext_session_lock_v1);
+        return wl_proxy_get_version((struct wl_proxy *)ext_session_lock_v1);
 }
 
 /**
@@ -464,8 +481,11 @@ ext_session_lock_v1_get_version(struct ext_session_lock_v1 *ext_session_lock_v1)
 static inline void
 ext_session_lock_v1_destroy(struct ext_session_lock_v1 *ext_session_lock_v1)
 {
-	wl_proxy_marshal_flags((struct wl_proxy *) ext_session_lock_v1,
-			 EXT_SESSION_LOCK_V1_DESTROY, NULL, wl_proxy_get_version((struct wl_proxy *) ext_session_lock_v1), WL_MARSHAL_FLAG_DESTROY);
+        wl_proxy_marshal_flags(
+                (struct wl_proxy *)ext_session_lock_v1,
+                EXT_SESSION_LOCK_V1_DESTROY, NULL,
+                wl_proxy_get_version((struct wl_proxy *)ext_session_lock_v1),
+                WL_MARSHAL_FLAG_DESTROY);
 }
 
 /**
@@ -484,14 +504,20 @@ ext_session_lock_v1_destroy(struct ext_session_lock_v1 *ext_session_lock_v1)
  * is a duplicate_output protocol error.
  */
 static inline struct ext_session_lock_surface_v1 *
-ext_session_lock_v1_get_lock_surface(struct ext_session_lock_v1 *ext_session_lock_v1, struct wl_surface *surface, struct wl_output *output)
+ext_session_lock_v1_get_lock_surface(
+        struct ext_session_lock_v1 *ext_session_lock_v1,
+        struct wl_surface *surface, struct wl_output *output)
 {
-	struct wl_proxy *id;
+        struct wl_proxy *id;
 
-	id = wl_proxy_marshal_flags((struct wl_proxy *) ext_session_lock_v1,
-			 EXT_SESSION_LOCK_V1_GET_LOCK_SURFACE, &ext_session_lock_surface_v1_interface, wl_proxy_get_version((struct wl_proxy *) ext_session_lock_v1), 0, NULL, surface, output);
+        id = wl_proxy_marshal_flags(
+                (struct wl_proxy *)ext_session_lock_v1,
+                EXT_SESSION_LOCK_V1_GET_LOCK_SURFACE,
+                &ext_session_lock_surface_v1_interface,
+                wl_proxy_get_version((struct wl_proxy *)ext_session_lock_v1), 0,
+                NULL, surface, output);
 
-	return (struct ext_session_lock_surface_v1 *) id;
+        return (struct ext_session_lock_surface_v1 *)id;
 }
 
 /**
@@ -521,32 +547,35 @@ ext_session_lock_v1_get_lock_surface(struct ext_session_lock_v1 *ext_session_loc
  * the server might terminate the client with a protocol error before
  * it processes the unlock_and_destroy request.
  */
-static inline void
-ext_session_lock_v1_unlock_and_destroy(struct ext_session_lock_v1 *ext_session_lock_v1)
+static inline void ext_session_lock_v1_unlock_and_destroy(
+        struct ext_session_lock_v1 *ext_session_lock_v1)
 {
-	wl_proxy_marshal_flags((struct wl_proxy *) ext_session_lock_v1,
-			 EXT_SESSION_LOCK_V1_UNLOCK_AND_DESTROY, NULL, wl_proxy_get_version((struct wl_proxy *) ext_session_lock_v1), WL_MARSHAL_FLAG_DESTROY);
+        wl_proxy_marshal_flags(
+                (struct wl_proxy *)ext_session_lock_v1,
+                EXT_SESSION_LOCK_V1_UNLOCK_AND_DESTROY, NULL,
+                wl_proxy_get_version((struct wl_proxy *)ext_session_lock_v1),
+                WL_MARSHAL_FLAG_DESTROY);
 }
 
 #ifndef EXT_SESSION_LOCK_SURFACE_V1_ERROR_ENUM
 #define EXT_SESSION_LOCK_SURFACE_V1_ERROR_ENUM
 enum ext_session_lock_surface_v1_error {
-	/**
-	 * surface committed before first ack_configure request
-	 */
-	EXT_SESSION_LOCK_SURFACE_V1_ERROR_COMMIT_BEFORE_FIRST_ACK = 0,
-	/**
-	 * surface committed with a null buffer
-	 */
-	EXT_SESSION_LOCK_SURFACE_V1_ERROR_NULL_BUFFER = 1,
-	/**
-	 * failed to match ack'd width/height
-	 */
-	EXT_SESSION_LOCK_SURFACE_V1_ERROR_DIMENSIONS_MISMATCH = 2,
-	/**
-	 * serial provided in ack_configure is invalid
-	 */
-	EXT_SESSION_LOCK_SURFACE_V1_ERROR_INVALID_SERIAL = 3,
+        /**
+         * surface committed before first ack_configure request
+         */
+        EXT_SESSION_LOCK_SURFACE_V1_ERROR_COMMIT_BEFORE_FIRST_ACK = 0,
+        /**
+         * surface committed with a null buffer
+         */
+        EXT_SESSION_LOCK_SURFACE_V1_ERROR_NULL_BUFFER = 1,
+        /**
+         * failed to match ack'd width/height
+         */
+        EXT_SESSION_LOCK_SURFACE_V1_ERROR_DIMENSIONS_MISMATCH = 2,
+        /**
+         * serial provided in ack_configure is invalid
+         */
+        EXT_SESSION_LOCK_SURFACE_V1_ERROR_INVALID_SERIAL = 3,
 };
 #endif /* EXT_SESSION_LOCK_SURFACE_V1_ERROR_ENUM */
 
@@ -555,34 +584,34 @@ enum ext_session_lock_surface_v1_error {
  * @struct ext_session_lock_surface_v1_listener
  */
 struct ext_session_lock_surface_v1_listener {
-	/**
-	 * the client should resize its surface
-	 *
-	 * This event is sent once on binding the interface and may be
-	 * sent again at the compositor's discretion, for example if output
-	 * geometry changes.
-	 *
-	 * The width and height are in surface-local coordinates and are
-	 * exact requirements. Failing to match these surface dimensions in
-	 * the next commit after acking a configure is a protocol error.
-	 * @param serial serial for use in ack_configure
-	 */
-	void (*configure)(void *data,
-			  struct ext_session_lock_surface_v1 *ext_session_lock_surface_v1,
-			  uint32_t serial,
-			  uint32_t width,
-			  uint32_t height);
+        /**
+         * the client should resize its surface
+         *
+         * This event is sent once on binding the interface and may be
+         * sent again at the compositor's discretion, for example if output
+         * geometry changes.
+         *
+         * The width and height are in surface-local coordinates and are
+         * exact requirements. Failing to match these surface dimensions in
+         * the next commit after acking a configure is a protocol error.
+         * @param serial serial for use in ack_configure
+         */
+        void (*configure)(
+                void                               *data,
+                struct ext_session_lock_surface_v1 *ext_session_lock_surface_v1,
+                uint32_t serial, uint32_t width, uint32_t height);
 };
 
 /**
  * @ingroup iface_ext_session_lock_surface_v1
  */
-static inline int
-ext_session_lock_surface_v1_add_listener(struct ext_session_lock_surface_v1 *ext_session_lock_surface_v1,
-					 const struct ext_session_lock_surface_v1_listener *listener, void *data)
+static inline int ext_session_lock_surface_v1_add_listener(
+        struct ext_session_lock_surface_v1 *ext_session_lock_surface_v1,
+        const struct ext_session_lock_surface_v1_listener *listener, void *data)
 {
-	return wl_proxy_add_listener((struct wl_proxy *) ext_session_lock_surface_v1,
-				     (void (**)(void)) listener, data);
+        return wl_proxy_add_listener(
+                (struct wl_proxy *)ext_session_lock_surface_v1,
+                (void (**)(void))listener, data);
 }
 
 #define EXT_SESSION_LOCK_SURFACE_V1_DESTROY 0
@@ -603,23 +632,27 @@ ext_session_lock_surface_v1_add_listener(struct ext_session_lock_surface_v1 *ext
 #define EXT_SESSION_LOCK_SURFACE_V1_ACK_CONFIGURE_SINCE_VERSION 1
 
 /** @ingroup iface_ext_session_lock_surface_v1 */
-static inline void
-ext_session_lock_surface_v1_set_user_data(struct ext_session_lock_surface_v1 *ext_session_lock_surface_v1, void *user_data)
+static inline void ext_session_lock_surface_v1_set_user_data(
+        struct ext_session_lock_surface_v1 *ext_session_lock_surface_v1,
+        void                               *user_data)
 {
-	wl_proxy_set_user_data((struct wl_proxy *) ext_session_lock_surface_v1, user_data);
+        wl_proxy_set_user_data((struct wl_proxy *)ext_session_lock_surface_v1,
+                               user_data);
 }
 
 /** @ingroup iface_ext_session_lock_surface_v1 */
-static inline void *
-ext_session_lock_surface_v1_get_user_data(struct ext_session_lock_surface_v1 *ext_session_lock_surface_v1)
+static inline void *ext_session_lock_surface_v1_get_user_data(
+        struct ext_session_lock_surface_v1 *ext_session_lock_surface_v1)
 {
-	return wl_proxy_get_user_data((struct wl_proxy *) ext_session_lock_surface_v1);
+        return wl_proxy_get_user_data(
+                (struct wl_proxy *)ext_session_lock_surface_v1);
 }
 
-static inline uint32_t
-ext_session_lock_surface_v1_get_version(struct ext_session_lock_surface_v1 *ext_session_lock_surface_v1)
+static inline uint32_t ext_session_lock_surface_v1_get_version(
+        struct ext_session_lock_surface_v1 *ext_session_lock_surface_v1)
 {
-	return wl_proxy_get_version((struct wl_proxy *) ext_session_lock_surface_v1);
+        return wl_proxy_get_version(
+                (struct wl_proxy *)ext_session_lock_surface_v1);
 }
 
 /**
@@ -635,11 +668,15 @@ ext_session_lock_surface_v1_get_version(struct ext_session_lock_surface_v1 *ext_
  * ext_session_lock_v1.unlock_and_destroy event is sent, the compositor
  * must fall back to rendering a solid color.
  */
-static inline void
-ext_session_lock_surface_v1_destroy(struct ext_session_lock_surface_v1 *ext_session_lock_surface_v1)
+static inline void ext_session_lock_surface_v1_destroy(
+        struct ext_session_lock_surface_v1 *ext_session_lock_surface_v1)
 {
-	wl_proxy_marshal_flags((struct wl_proxy *) ext_session_lock_surface_v1,
-			 EXT_SESSION_LOCK_SURFACE_V1_DESTROY, NULL, wl_proxy_get_version((struct wl_proxy *) ext_session_lock_surface_v1), WL_MARSHAL_FLAG_DESTROY);
+        wl_proxy_marshal_flags(
+                (struct wl_proxy *)ext_session_lock_surface_v1,
+                EXT_SESSION_LOCK_SURFACE_V1_DESTROY, NULL,
+                wl_proxy_get_version(
+                        (struct wl_proxy *)ext_session_lock_surface_v1),
+                WL_MARSHAL_FLAG_DESTROY);
 }
 
 /**
@@ -670,14 +707,19 @@ ext_session_lock_surface_v1_destroy(struct ext_session_lock_surface_v1 *ext_sess
  * request referencing a configure event older than the last configure
  * event acked for a given lock surface.
  */
-static inline void
-ext_session_lock_surface_v1_ack_configure(struct ext_session_lock_surface_v1 *ext_session_lock_surface_v1, uint32_t serial)
+static inline void ext_session_lock_surface_v1_ack_configure(
+        struct ext_session_lock_surface_v1 *ext_session_lock_surface_v1,
+        uint32_t                            serial)
 {
-	wl_proxy_marshal_flags((struct wl_proxy *) ext_session_lock_surface_v1,
-			 EXT_SESSION_LOCK_SURFACE_V1_ACK_CONFIGURE, NULL, wl_proxy_get_version((struct wl_proxy *) ext_session_lock_surface_v1), 0, serial);
+        wl_proxy_marshal_flags(
+                (struct wl_proxy *)ext_session_lock_surface_v1,
+                EXT_SESSION_LOCK_SURFACE_V1_ACK_CONFIGURE, NULL,
+                wl_proxy_get_version(
+                        (struct wl_proxy *)ext_session_lock_surface_v1),
+                0, serial);
 }
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif
 
