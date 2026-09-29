@@ -1,4 +1,3 @@
-#include <security/_pam_types.h>
 #define _POSIX_C_SOURCE 199309L
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
@@ -82,9 +81,7 @@ struct lock_state {
         int    running;
         int    lock_status;
 };
-
 // Helper functions
-
 // file helpers
 static char *read_file(const char *path)
 {
@@ -166,6 +163,81 @@ static void password_backspace(struct lock_state *s)
         explicit_bzero(s->password + n, s->password_len - n);
         s->password_len = n;
 }
+
+//PAM
+
+// Handles the pam conversation
+// Since our app is just dealing with the local user login context we can safely assume that the first
+// PAM_PROMPT_ECHO_OFF msg we get is probably(%95) a password field.
+// COULDDO: Support HSM/FIDO logins that'd be neat.
+static int pam_conv_fn(int num_msg, const struct pam_message **msg, struct pam_response **response, void *data) {
+    const char *password = data;
+    if (num_msg <= 0)
+        return PAM_CONV_ERR;
+    struct pam_response *r = calloc(num_msg, sizeof(*r));
+    if(!r)
+        return PAM_BUF_ERR;
+    for (int i = 0; i < num_msg; i++) {
+        if (msg[i]->msg_style != PAM_PROMPT_ECHO_OFF)
+            continue;
+        r[i].resp = strdup(password);
+        // deconstruct message safe wiping the secret on fail.
+        if(!r[i].resp) {
+            for (int j = 0; j < i; j++) {
+                if (r[j].resp) {
+                    explicit_bzero(r[j].resp, strlen(r[j].resp));
+                    free(r[j].resp);
+                }
+            }
+            free(r);
+            return PAM_BUF_ERR;
+        }
+    }
+    *response = r;
+    return PAM_SUCCESS;
+}
+// Returns 1 if 'password' is correct for the current user, else 0
+static int check_password(const char *password) {
+    struct passwd *pw = getpwuid(getuid());
+    if (!pw) {
+        return 0;
+    }
+    struct pam_conv conv = { pam_conv_fn, (void *)password};
+    pam_handle_t *pamh = NULL;
+
+    int ret = pam_start(PAM_SERVICE_NAME, pw->pw_name, &conv, &pamh);
+    if (ret != PAM_SUCCESS){
+        return 0;
+    }
+
+    ret = pam_authenticate(pamh, 0);
+    pam_end(pamh, ret);
+    return ret == PAM_SUCCESS;
+}
+// unlocking
+static void unlock(struct lock_state *s) {
+    if (s->lock_status != LOCK_LOCKED)
+        return;
+    ext_session_lock_v1_unlock_and_destroy(s->lock);
+    s->lock = NULL;
+    s->lock_status = LOCK_UNLOCKED;
+    s->running = 0;
+}
+
+static void try_unlock(struct lock_state *s) {
+    int ok = 0;
+    if (s->lock_status == LOCK_LOCKED) {
+        s->password[s->password_len] = '\0';
+        ok = check_password(s->password);
+    }
+    wipe_secret(s->password, sizeof(s->password));
+    s->password_len = 0;
+    if(ok)
+        unlock(s);
+
+}
+
+
 // XKB KEYBOARD LISTENER
 static void keyboard_keymap(void *data, struct wl_keyboard *k, uint32_t format,
                             int32_t fd, uint32_t size)
