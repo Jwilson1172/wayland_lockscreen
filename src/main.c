@@ -1,3 +1,4 @@
+#include <security/_pam_types.h>
 #define _POSIX_C_SOURCE 199309L
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
@@ -8,7 +9,6 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <sys/mman.h>
 #include <sys/random.h>
 #include <time.h>
@@ -18,6 +18,12 @@
 #include <xkbcommon/xkbcommon.h>
 
 #include "ext-session-lock-v1.h"
+// moved here to enable __USE_MISC 1
+// Idk if that effects other headers so we're seperating it so it can't effect
+// other headers
+// This gives us explicit_bzero(void *buf, u_size size)
+#define __USE_MISC 1
+#include <string.h>
 
 #define PASSWORD_MAX 256
 #define MAX_SHADER_SIZE (16 * 1024 * 1024) // 16MiB
@@ -78,6 +84,8 @@ struct lock_state {
 };
 
 // Helper functions
+
+// file helpers
 static char *read_file(const char *path)
 {
         FILE *fp = fopen(path, "rb");
@@ -109,6 +117,7 @@ done:
         return buf;
 }
 
+// wayland helpers
 static void output_destroy(struct output *out)
 {
         struct lock_state *s = out->state;
@@ -138,6 +147,118 @@ static void cleanup(struct lock_state *s)
         return;
 }
 
+// keyboard helpers
+static void wipe_secret(void *buf, size_t len)
+{
+        ssize_t n = getrandom(buf, len, 0);
+        (void)n;
+        explicit_bzero(buf, len);
+}
+
+static void password_backspace(struct lock_state *s)
+{
+        if (s->password_len == 0)
+                return;
+        size_t n = s->password_len;
+        do {
+                n--;
+        } while (n > 0 && ((unsigned char)s->password[n] & 0xC0) == 0x80);
+        explicit_bzero(s->password + n, s->password_len - n);
+        s->password_len = n;
+}
+// XKB KEYBOARD LISTENER
+static void keyboard_keymap(void *data, struct wl_keyboard *k, uint32_t format,
+                            int32_t fd, uint32_t size)
+{
+        struct lock_state *s = data;
+        if (format != WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1) {
+                close(fd);
+                return;
+        }
+        char *map_str = mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
+        close(fd);
+        if (map_str == MAP_FAILED)
+                return;
+        struct xkb_keymap *keymap = xkb_keymap_new_from_string(
+                s->xkb_context, map_str, XKB_KEYMAP_FORMAT_TEXT_V1,
+                XKB_KEYMAP_COMPILE_NO_FLAGS);
+        munmap(map_str, size);
+        if (!keymap)
+                return;
+        struct xkb_state *xkb_state = xkb_state_new(keymap);
+        if (s->xkb_state)
+                xkb_state_unref(s->xkb_state);
+        if (s->xkb_keymap)
+                xkb_keymap_unref(s->xkb_keymap);
+        s->xkb_keymap = keymap;
+        s->xkb_state  = xkb_state;
+}
+static void keyboard_enter(void *d, struct wl_keyboard *k, uint32_t serial,
+                           struct wl_surface *surf, struct wl_array *keys)
+{
+}
+static void keyboard_leave(void *d, struct wl_keyboard *k, uint32_t serial,
+                           struct wl_surface *surf)
+{
+}
+static void keyboard_key(void *data, struct wl_keyboard *k, uint32_t serial,
+                         uint32_t time, uint32_t key, uint32_t key_state)
+{
+        struct lock_state *s = data;
+        if (key_state != WL_KEYBOARD_KEY_STATE_PRESSED || !s->xkb_state)
+                return;
+        xkb_keysym_t sym = xkb_state_key_get_one_sym(s->xkb_state, key + 8);
+#if defined(MINIMAL_LOCK_DEV)
+        if (sym == XKB_KEY_Escape &&
+            xkb_state_mod_name_is_active(s->xkb_state, XKB_MOD_NAME_CTRL,
+                                         XKB_STATE_MODS_EFFECTIVE) > 0 &&
+            xkb_state_mod_name_is_active(s->xkb_state, XKB_MOD_NAME_SHIFT,
+                                         XKB_STATE_MODS_EFFECTIVE) > 0) {
+                fprintf(stderr, "DEV ESCAPE HATCH: unlocking without auth");
+                unlock(s);
+                return;
+        }
+#endif
+        if (sym == XKB_KEY_Return || sym == XKB_KEY_KP_Enter) {
+                try_unlock(s);
+                return;
+        }
+        if (sym == XKB_KEY_BackSpace) {
+                password_backspace(s);
+                return;
+        }
+        if (sym == XKB_KEY_Escape) {
+                wipe_secret(s->password, sizeof(s->password));
+                s->password_len = 0;
+                return;
+        }
+
+        char utf8[8];
+        int  n = xkb_state_key_get_utf8(s->xkb_state, key + 8, utf8,
+                                        sizeof(utf8));
+        // TODO: add utf-8 handling and command specific handling (e.g Ctrl+A,
+        // left arrow, right arrow, tab to focus next)
+}
+static void keyboard_modifiers(void *data, struct wl_keyboard *k,
+                               uint32_t serial, uint32_t dep, uint32_t lat,
+                               uint32_t lock, uint32_t grp)
+{
+        struct lock_state *s = data;
+        if (s->xkb_state)
+                xkb_state_update_mask(s->xkb_state, dep, lat, lock, 0, 0, grp);
+}
+static void keyboard_repeat_info(void *data, struct wl_keyboard *k,
+                                 int32_t rate, int32_t delay)
+{
+}
+static const struct wl_keyboard_listener keyboard_listener = {
+        .keymap      = keyboard_keymap,
+        .enter       = keyboard_enter,
+        .leave       = keyboard_leave,
+        .key         = keyboard_key,
+        .modifiers   = keyboard_modifiers,
+        .repeat_info = keyboard_repeat_info
+};
 // SEAT LISTENER
 // this configuires the session seat to allow us to use the keyboard capability
 // Without this we wouldn't be able to listen to the keyboard
@@ -147,7 +268,7 @@ static void seat_capabilities(void *data, struct wl_seat *seat, uint32_t caps)
         struct lock_state *s = data;
         if ((caps & WL_SEAT_CAPABILITY_KEYBOARD) && !s->keyboard) {
                 s->keyboard = wl_seat_get_keyboard(seat);
-                wl_keyboard_add_listener(s->keyboard, &keybord_listener, s);
+                wl_keyboard_add_listener(s->keyboard, &keyboard_listener, s);
         } else if (!(caps & WL_SEAT_CAPABILITY_KEYBOARD) && s->keyboard) {
                 wl_keyboard_release(s->keyboard);
                 s->keyboard = NULL;
@@ -175,19 +296,19 @@ static void registry_global(void *data, struct wl_registry *registry,
                                                  &wl_compositor_interface,
                                                  MIN(version, 4u));
 
-        // Seat
+                // Seat
         } else if (strcmp(interface, wl_seat_interface.name) == 0 &&
                    version >= 5 && !s->seat) {
                 s->seat =
                         wl_registry_bind(registry, name, &wl_seat_interface, 5);
                 wl_seat_add_listener(s->seat, &seat_listener, s);
-        // Session lock manager
+                // Session lock manager
         } else if (strcmp(interface,
                           ext_session_lock_manager_v1_interface.name) == 0) {
                 s->lock_manager = wl_registry_bind(
                         registry, name, &ext_session_lock_manager_v1_interface,
                         1);
-        // Output
+                // Output
         } else if (strcmp(interface, wl_output_interface.name) == 0 &&
                    version >= 3) {
                 struct output *out = calloc(1, sizeof(*out));
