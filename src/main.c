@@ -16,7 +16,7 @@
 #include <wayland-egl.h>
 #include <xkbcommon/xkbcommon.h>
 
-#include "ext-session-lock-v1.h"
+#include "protocols/ext-session-lock-protocol-v1.h"
 // moved here to enable __USE_MISC 1
 // Idk if that effects other headers so we're seperating it so it can't effect
 // other headers
@@ -25,7 +25,7 @@
 #include <string.h>
 
 #define PASSWORD_MAX 256
-#define MAX_SHADER_SIZE (16 * 1024 * 1024) // 16MiB
+#define MAX_SHADER_SIZE (size_t)(16 * 1024 * 1024) // 16MiB
 #define PAM_SERVICE_NAME "nyanlock"
 #define PAM_SERVICE_FILE "/etc/pam.d/" PAM_SERVICE_NAME
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
@@ -86,23 +86,26 @@ struct lock_state {
 static char *read_file(const char *path)
 {
         FILE *fp = fopen(path, "rb");
-        if (!fp)
+        if (!fp) {
                 return NULL;
-        char *buf = NULL;
-        long  len;
+        }
+        char  *buf = NULL;
+        size_t len;
 
         // checks if we can read the file and gets the length of the file then
         // checks size contrains and if we can reset the index back to 0.
         if (fseek(fp, 0, SEEK_END) != 0 || (len = ftell(fp)) < 0 ||
-            len > MAX_SHADER_SIZE || fseek(fp, 0, SEEK_SET) != 0)
+            len > MAX_SHADER_SIZE || fseek(fp, 0, SEEK_SET) != 0) {
                 goto done;
+        }
 
         buf = malloc(len + 1);
-        if (!buf)
+        if (!buf) {
                 goto done;
+        }
 
         // Reads and checks if we actually read the file.
-        if (fread(buf, 1, len, fp) != (size_t)len) {
+        if (fread(buf, 1, len, fp) != len) {
                 free(buf);
                 buf = NULL;
                 goto done;
@@ -120,28 +123,33 @@ static void output_destroy(struct output *out)
         struct lock_state *s = out->state;
         // TODO: Most of this code does nothing since we havent finished
         // implementing it all.
-        if (out->frame_cb)
+        if (out->frame_cb) {
                 wl_callback_destroy(out->frame_cb);
+        }
         if (out->egl_surface != EGL_NO_SURFACE) {
-                if (eglGetCurrentSurface(EGL_DRAW) == out->egl_surface)
+                if (eglGetCurrentSurface(EGL_DRAW) == out->egl_surface) {
                         eglMakeCurrent(s->egl_display, EGL_NO_SURFACE,
                                        EGL_NO_SURFACE, EGL_NO_CONTEXT);
+                }
                 eglDestroySurface(s->egl_display, out->egl_surface);
         }
-        if (out->egl_window)
+        if (out->egl_window) {
                 wl_egl_window_destroy(out->egl_window);
-        if (out->lock_surface)
+        }
+        if (out->lock_surface) {
                 ext_session_lock_surface_v1_destroy(out->lock_surface);
-        if (out->wl_surface)
+        }
+        if (out->wl_surface) {
                 wl_surface_destroy(out->wl_surface);
+        }
         wl_output_release(out->wl_output);
         wl_list_remove(&out->link);
         free(out);
 }
 static void cleanup(struct lock_state *s)
 {
-        fprintf(stderr, "Cleanup Not implemented yet! LEAKY");
-        return;
+        (void)s;
+        (void)fprintf(stderr, "Cleanup Not implemented yet! LEAKY");
 }
 
 // keyboard helpers
@@ -154,8 +162,9 @@ static void wipe_secret(void *buf, size_t len)
 
 static void password_backspace(struct lock_state *s)
 {
-        if (s->password_len == 0)
+        if (s->password_len == 0) {
                 return;
+        }
         size_t n = s->password_len;
         do {
                 n--;
@@ -164,84 +173,94 @@ static void password_backspace(struct lock_state *s)
         s->password_len = n;
 }
 
-//PAM
+// PAM
 
 // Handles the pam conversation
-// Since our app is just dealing with the local user login context we can safely assume that the first
-// PAM_PROMPT_ECHO_OFF msg we get is probably(%95) a password field.
-// COULDDO: Support HSM/FIDO logins that'd be neat.
-static int pam_conv_fn(int num_msg, const struct pam_message **msg, struct pam_response **response, void *data) {
-    const char *password = data;
-    if (num_msg <= 0)
-        return PAM_CONV_ERR;
-    struct pam_response *r = calloc(num_msg, sizeof(*r));
-    if(!r)
-        return PAM_BUF_ERR;
-    for (int i = 0; i < num_msg; i++) {
-        if (msg[i]->msg_style != PAM_PROMPT_ECHO_OFF)
-            continue;
-        r[i].resp = strdup(password);
-        // deconstruct message safe wiping the secret on fail.
-        if(!r[i].resp) {
-            for (int j = 0; j < i; j++) {
-                if (r[j].resp) {
-                    explicit_bzero(r[j].resp, strlen(r[j].resp));
-                    free(r[j].resp);
-                }
-            }
-            free(r);
-            return PAM_BUF_ERR;
+// Since our app is just dealing with the local user login context we can safely
+// assume that the first PAM_PROMPT_ECHO_OFF msg we get is probably(%95) a
+// password field. COULDDO: Support HSM/FIDO logins that'd be neat.
+static int pam_conv_fn(int num_msg, const struct pam_message **msg,
+                       struct pam_response **response, void *data)
+{
+        const char *password = data;
+        if (num_msg <= 0) {
+                return PAM_CONV_ERR;
         }
-    }
-    *response = r;
-    return PAM_SUCCESS;
+        struct pam_response *r = calloc((size_t)num_msg, sizeof(*r));
+        if (!r) {
+                return PAM_BUF_ERR;
+        }
+        for (int i = 0; i < num_msg; i++) {
+                if (msg[i]->msg_style != PAM_PROMPT_ECHO_OFF) {
+                        continue;
+                }
+                r[i].resp = strdup(password);
+                // deconstruct message safe wiping the secret on fail.
+                if (!r[i].resp) {
+                        for (int j = 0; j < i; j++) {
+                                if (r[j].resp) {
+                                        explicit_bzero(r[j].resp,
+                                                       strlen(r[j].resp));
+                                        free(r[j].resp);
+                                }
+                        }
+                        free(r);
+                        return PAM_BUF_ERR;
+                }
+        }
+        *response = r;
+        return PAM_SUCCESS;
 }
 // Returns 1 if 'password' is correct for the current user, else 0
-static int check_password(const char *password) {
-    struct passwd *pw = getpwuid(getuid());
-    if (!pw) {
-        return 0;
-    }
-    struct pam_conv conv = { pam_conv_fn, (void *)password};
-    pam_handle_t *pamh = NULL;
+static int check_password(const char *password)
+{
+        struct passwd *pw = getpwuid(getuid());
+        if (!pw) {
+                return 0;
+        }
+        struct pam_conv conv = { pam_conv_fn, (void *)password };
+        pam_handle_t   *pamh = NULL;
 
-    int ret = pam_start(PAM_SERVICE_NAME, pw->pw_name, &conv, &pamh);
-    if (ret != PAM_SUCCESS){
-        return 0;
-    }
+        int ret = pam_start(PAM_SERVICE_NAME, pw->pw_name, &conv, &pamh);
+        if (ret != PAM_SUCCESS) {
+                return 0;
+        }
 
-    ret = pam_authenticate(pamh, 0);
-    pam_end(pamh, ret);
-    return ret == PAM_SUCCESS;
+        ret = pam_authenticate(pamh, 0);
+        pam_end(pamh, ret);
+        return ret == PAM_SUCCESS;
 }
 // unlocking
-static void unlock(struct lock_state *s) {
-    if (s->lock_status != LOCK_LOCKED)
-        return;
-    ext_session_lock_v1_unlock_and_destroy(s->lock);
-    s->lock = NULL;
-    s->lock_status = LOCK_UNLOCKED;
-    s->running = 0;
+static void unlock(struct lock_state *s)
+{
+        if (s->lock_status != LOCK_LOCKED) {
+                return;
+        }
+        ext_session_lock_v1_unlock_and_destroy(s->lock);
+        s->lock        = NULL;
+        s->lock_status = LOCK_UNLOCKED;
+        s->running     = 0;
 }
 
-static void try_unlock(struct lock_state *s) {
-    int ok = 0;
-    if (s->lock_status == LOCK_LOCKED) {
-        s->password[s->password_len] = '\0';
-        ok = check_password(s->password);
-    }
-    wipe_secret(s->password, sizeof(s->password));
-    s->password_len = 0;
-    if(ok)
-        unlock(s);
-
+static void try_unlock(struct lock_state *s)
+{
+        int ok = 0;
+        if (s->lock_status == LOCK_LOCKED) {
+                s->password[s->password_len] = '\0';
+                ok                           = check_password(s->password);
+        }
+        wipe_secret(s->password, sizeof(s->password));
+        s->password_len = 0;
+        if (ok) {
+                unlock(s);
+        }
 }
-
 
 // XKB KEYBOARD LISTENER
 static void keyboard_keymap(void *data, struct wl_keyboard *k, uint32_t format,
                             int32_t fd, uint32_t size)
 {
+        (void)k;
         struct lock_state *s = data;
         if (format != WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1) {
                 close(fd);
@@ -249,36 +268,53 @@ static void keyboard_keymap(void *data, struct wl_keyboard *k, uint32_t format,
         }
         char *map_str = mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
         close(fd);
-        if (map_str == MAP_FAILED)
+        if (map_str == MAP_FAILED) {
                 return;
+        }
         struct xkb_keymap *keymap = xkb_keymap_new_from_string(
                 s->xkb_context, map_str, XKB_KEYMAP_FORMAT_TEXT_V1,
                 XKB_KEYMAP_COMPILE_NO_FLAGS);
         munmap(map_str, size);
-        if (!keymap)
+        if (!keymap) {
                 return;
+        }
         struct xkb_state *xkb_state = xkb_state_new(keymap);
-        if (s->xkb_state)
+        if (s->xkb_state) {
                 xkb_state_unref(s->xkb_state);
-        if (s->xkb_keymap)
+        }
+        if (s->xkb_keymap) {
                 xkb_keymap_unref(s->xkb_keymap);
+        }
         s->xkb_keymap = keymap;
         s->xkb_state  = xkb_state;
 }
 static void keyboard_enter(void *d, struct wl_keyboard *k, uint32_t serial,
                            struct wl_surface *surf, struct wl_array *keys)
 {
+        (void)d;
+        (void)k;
+        (void)serial;
+        (void)surf;
+        (void)keys;
 }
 static void keyboard_leave(void *d, struct wl_keyboard *k, uint32_t serial,
                            struct wl_surface *surf)
 {
+        (void)d;
+        (void)k;
+        (void)serial;
+        (void)surf;
 }
 static void keyboard_key(void *data, struct wl_keyboard *k, uint32_t serial,
                          uint32_t time, uint32_t key, uint32_t key_state)
 {
+        (void)time;
+        (void)serial;
+        (void)k;
         struct lock_state *s = data;
-        if (key_state != WL_KEYBOARD_KEY_STATE_PRESSED || !s->xkb_state)
+        if (key_state != WL_KEYBOARD_KEY_STATE_PRESSED || !s->xkb_state) {
                 return;
+        }
         xkb_keysym_t sym = xkb_state_key_get_one_sym(s->xkb_state, key + 8);
 #if defined(MINIMAL_LOCK_DEV)
         if (sym == XKB_KEY_Escape &&
@@ -286,7 +322,8 @@ static void keyboard_key(void *data, struct wl_keyboard *k, uint32_t serial,
                                          XKB_STATE_MODS_EFFECTIVE) > 0 &&
             xkb_state_mod_name_is_active(s->xkb_state, XKB_MOD_NAME_SHIFT,
                                          XKB_STATE_MODS_EFFECTIVE) > 0) {
-                fprintf(stderr, "DEV ESCAPE HATCH: unlocking without auth");
+                (void)fprintf(stderr,
+                              "DEV ESCAPE HATCH: unlocking without auth");
                 unlock(s);
                 return;
         }
@@ -308,6 +345,7 @@ static void keyboard_key(void *data, struct wl_keyboard *k, uint32_t serial,
         char utf8[8];
         int  n = xkb_state_key_get_utf8(s->xkb_state, key + 8, utf8,
                                         sizeof(utf8));
+        (void)n;
         // TODO: add utf-8 handling and command specific handling (e.g Ctrl+A,
         // left arrow, right arrow, tab to focus next)
 }
@@ -315,13 +353,20 @@ static void keyboard_modifiers(void *data, struct wl_keyboard *k,
                                uint32_t serial, uint32_t dep, uint32_t lat,
                                uint32_t lock, uint32_t grp)
 {
+        (void)k;
+        (void)serial;
         struct lock_state *s = data;
-        if (s->xkb_state)
+        if (s->xkb_state) {
                 xkb_state_update_mask(s->xkb_state, dep, lat, lock, 0, 0, grp);
+        }
 }
 static void keyboard_repeat_info(void *data, struct wl_keyboard *k,
                                  int32_t rate, int32_t delay)
 {
+        (void)data;
+        (void)rate;
+        (void)delay;
+        (void)k;
 }
 static const struct wl_keyboard_listener keyboard_listener = {
         .keymap      = keyboard_keymap,
@@ -349,6 +394,9 @@ static void seat_capabilities(void *data, struct wl_seat *seat, uint32_t caps)
 
 static void seat_name(void *d, struct wl_seat *seat, const char *name)
 {
+        (void)seat;
+        (void)name;
+        (void)d;
 }
 
 static const struct wl_seat_listener seat_listener = {
@@ -366,7 +414,7 @@ static void registry_global(void *data, struct wl_registry *registry,
         if (strcmp(interface, wl_compositor_interface.name) == 0) {
                 s->compositor = wl_registry_bind(registry, name,
                                                  &wl_compositor_interface,
-                                                 MIN(version, 4u));
+                                                 MIN(version, 4U));
 
                 // Seat
         } else if (strcmp(interface, wl_seat_interface.name) == 0 &&
@@ -384,16 +432,18 @@ static void registry_global(void *data, struct wl_registry *registry,
         } else if (strcmp(interface, wl_output_interface.name) == 0 &&
                    version >= 3) {
                 struct output *out = calloc(1, sizeof(*out));
-                if (!out)
+                if (!out) {
                         return;
+                }
                 out->state       = s;
                 out->global_name = name;
                 out->wl_output   = wl_registry_bind(registry, name,
                                                     &wl_output_interface, 3);
                 wl_list_insert(&s->outputs, &out->link);
                 if (s->lock_status == LOCK_REQUESTED ||
-                    s->lock_status == LOCK_LOCKED)
-                        fprintf(stderr, "Not Implemented yet");
+                    s->lock_status == LOCK_LOCKED) {
+                        (void)fprintf(stderr, "Not Implemented yet");
+                }
                 // output_attach(out);
         }
 }
@@ -401,8 +451,10 @@ static void registry_global(void *data, struct wl_registry *registry,
 static void registry_global_remove(void *data, struct wl_registry *registry,
                                    uint32_t name)
 {
+        (void)registry;
         struct lock_state *s = data;
-        struct output     *out, *tmp;
+        struct output     *out;
+        struct output     *tmp;
         wl_list_for_each_safe(out, tmp, &s->outputs, link)
         {
                 if (out->global_name == name) {
@@ -427,36 +479,37 @@ int main(int argc, char **argv)
 
         // no frag shader passed
         if (argc > 2) {
-                fprintf(stderr, "usage: %s [shader.frag]\n", argv[0]);
+                (void)fprintf(stderr, "usage: %s [shader.frag]\n", argv[0]);
                 return 2;
         }
 
         // Check if the pam service file is present
         if (access(PAM_SERVICE_FILE, R_OK) != 0) {
-                fprintf(stderr,
-                        "%s not found; refusing to lock(See README.md)\n",
-                        PAM_SERVICE_FILE);
+                (void)fprintf(stderr,
+                              "%s not found; refusing to lock(See README.md)\n",
+                              PAM_SERVICE_FILE);
                 return 1;
         }
 
         if (argc == 2) {
                 s.user_shader = read_file(argv[1]);
                 if (!s.user_shader) {
-                        fprintf(stderr, "cannot read shader %s: %s\n", argv[1],
-                                strerror(errno));
+                        (void)fprintf(stderr, "cannot read shader %s: %s\n",
+                                      argv[1], strerror(errno));
                         return 1;
                 }
         }
 
 #ifdef MINIMAL_LOCK_DEV
-        fprintf(stderr,
+        (void)fprintf(
+                stderr,
                 "WARNING: DEV BUILD. Ctrl+Shift+Escape unlocks without a password.\n");
 #endif
         clock_gettime(CLOCK_MONOTONIC, &s.t0);
         s.xkb_context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
         s.display     = wl_display_connect(NULL);
         if (!s.display) {
-                fprintf(stderr, "failed to connect to Wayland display\n");
+                (void)fprintf(stderr, "failed to connect to Wayland display\n");
                 goto done;
         }
         s.resistry = wl_display_get_registry(s.display);

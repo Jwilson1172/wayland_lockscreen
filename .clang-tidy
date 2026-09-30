@@ -1,0 +1,28 @@
+# Start from nothing.
+Checks: >
+  -*,
+  bugprone-*,
+  cert-*,
+  clang-analyzer-*,
+  misc-*,
+  performance-*,
+  portability-*,
+  readability-*,
+  -bugprone-easily-swappable-parameters,
+  -misc-include-cleaner,
+  -readability-magic-numbers,
+  -readability-identifier-length,
+  -readability-function-cognitive-complexity,
+  -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling
+
+WarningsAsErrors: ''
+
+# Only report issues in my headers (not system or generated ones).
+HeaderFilterRegex: '.*/include/.*'
+
+# clang-tidy 19+: also exclude generated headers by name.
+ExcludeHeaderFilterRegex: '.*-protocol\.h$'
+
+CheckOptions:
+  - key: readability-braces-around-statements.ShortStatementLines
+    value: '0'
