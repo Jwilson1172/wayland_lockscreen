@@ -60,3 +60,5 @@ dkms.conf
 # IDE config
 .zed
 .cache/
+#ctags
+tags
