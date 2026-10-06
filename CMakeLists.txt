@@ -49,6 +49,11 @@ endif()
 
 target_include_directories(nyanlock SYSTEM PRIVATE include/protocols)
 
+#----API Feature selection
+target_compile_definitions(nyanlock PRIVATE
+  _POSIX_C_SOURCE=199309L
+  _DEFAULT_SOURCE
+)
 
 # ---- Warnings ----
 target_compile_options(nyanlock PRIVATE
